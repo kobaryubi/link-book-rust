@@ -1,0 +1,6 @@
+services:
+  rust:
+    build: .
+    volumes:
+      - .:/usr/src/app
+    tty: true
