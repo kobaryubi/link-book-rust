@@ -1,11 +1,23 @@
 use juniper::{
     graphql_object, EmptyMutation, EmptySubscription, GraphQLObject, RootNode, Variables,
 };
+use rocket::State;
 use rocket::{get, launch, routes, Build, Rocket};
+use std::sync::atomic::{AtomicUsize, Ordering};
+
+struct HitCount {
+    count: AtomicUsize,
+}
 
 #[get("/")]
 fn index() -> &'static str {
     "Hello, world!"
+}
+
+#[get("/count")]
+fn count(hit_count: &State<HitCount>) -> String {
+    let current_count = hit_count.count.load(Ordering::Relaxed);
+    format!("Number of visits: {}", current_count)
 }
 
 #[derive(GraphQLObject)]
@@ -52,5 +64,14 @@ async fn execute() {
 
 #[launch]
 fn rocket() -> Rocket<Build> {
-    rocket::build().mount("/", routes![index, execute])
+    rocket::build()
+        .manage(HitCount {
+            count: AtomicUsize::new(0),
+        })
+        .manage(Schema::new(
+            Query,
+            EmptyMutation::new(),
+            EmptySubscription::new(),
+        ))
+        .mount("/", routes![index, execute, count])
 }
