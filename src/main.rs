@@ -1,6 +1,4 @@
-use juniper::{
-    graphql_object, EmptyMutation, EmptySubscription, GraphQLObject, RootNode, Variables,
-};
+use juniper::{graphql_object, EmptyMutation, EmptySubscription, GraphQLObject, RootNode};
 use rocket::State;
 use rocket::{get, launch, routes, Build, Rocket};
 use std::sync::atomic::{AtomicUsize, Ordering};
@@ -40,26 +38,12 @@ impl Query {
 
 type Schema = RootNode<'static, Query, EmptyMutation, EmptySubscription>;
 
-#[get("/execute")]
-async fn execute() {
-    let (result, _error) = juniper::execute(
-        "
-        query Person {
-            person {
-                name
-                age
-            }
-        }
-        ",
-        None,
-        &Schema::new(Query, EmptyMutation::new(), EmptySubscription::new()),
-        &Variables::new(),
-        &(),
-    )
-    .await
-    .unwrap();
-
-    println!("{:?}", result);
+#[get("/graphql?<request..>")]
+async fn get_graphql(
+    request: juniper_rocket::GraphQLRequest,
+    schema: &State<Schema>,
+) -> juniper_rocket::GraphQLResponse {
+    request.execute(schema, &()).await
 }
 
 #[launch]
@@ -73,5 +57,5 @@ fn rocket() -> Rocket<Build> {
             EmptyMutation::new(),
             EmptySubscription::new(),
         ))
-        .mount("/", routes![index, execute, count])
+        .mount("/", routes![index, count, get_graphql])
 }
