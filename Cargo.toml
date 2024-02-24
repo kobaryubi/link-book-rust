@@ -4,7 +4,8 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-juniper = "0.15.12"
+juniper = { git = "https://github.com/graphql-rust/juniper.git", branch = "master" }
+juniper_rocket = { git = "https://github.com/graphql-rust/juniper.git", branch = "master" }
 rocket = "0.5.0"
 
 [workspace]
