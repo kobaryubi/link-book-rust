@@ -1,15 +1,9 @@
 use juniper::{graphql_object, EmptyMutation, EmptySubscription, GraphQLObject, RootNode};
-use rocket::State;
-use rocket::{get, launch, routes, Build, Rocket};
+use rocket::{get, launch, post, response::content::RawHtml, routes, Build, Rocket, State};
 use std::sync::atomic::{AtomicUsize, Ordering};
 
 struct HitCount {
     count: AtomicUsize,
-}
-
-#[get("/")]
-fn index() -> &'static str {
-    "Hello, world!"
 }
 
 #[get("/count")]
@@ -46,6 +40,19 @@ async fn get_graphql(
     request.execute(schema, &()).await
 }
 
+#[post("/graphql", data = "<request>")]
+async fn post_graphql(
+    request: juniper_rocket::GraphQLRequest,
+    schema: &State<Schema>,
+) -> juniper_rocket::GraphQLResponse {
+    request.execute(schema, &()).await
+}
+
+#[get("/playground")]
+fn playground() -> RawHtml<String> {
+    juniper_rocket::playground_source("/graphql", None)
+}
+
 #[launch]
 fn rocket() -> Rocket<Build> {
     rocket::build()
@@ -57,5 +64,5 @@ fn rocket() -> Rocket<Build> {
             EmptyMutation::new(),
             EmptySubscription::new(),
         ))
-        .mount("/", routes![index, count, get_graphql])
+        .mount("/", routes![count, get_graphql, playground, post_graphql])
 }
