@@ -1,8 +1,8 @@
-use juniper::{EmptyMutation, EmptySubscription, RootNode};
-use link_book_rust::schema::Query;
+use juniper::{EmptySubscription, RootNode};
+use link_book_rust::schema::{Mutation, Query};
 use rocket::{get, launch, post, response::content::RawHtml, routes, Build, Rocket, State};
 
-type Schema = RootNode<'static, Query, EmptyMutation, EmptySubscription>;
+type Schema = RootNode<'static, Query, Mutation, EmptySubscription>;
 
 #[get("/graphql?<request..>")]
 async fn get_graphql(
@@ -28,10 +28,6 @@ fn playground() -> RawHtml<String> {
 #[launch]
 fn rocket() -> Rocket<Build> {
     rocket::build()
-        .manage(Schema::new(
-            Query,
-            EmptyMutation::new(),
-            EmptySubscription::new(),
-        ))
+        .manage(Schema::new(Query, Mutation, EmptySubscription::new()))
         .mount("/", routes![get_graphql, post_graphql, playground])
 }
