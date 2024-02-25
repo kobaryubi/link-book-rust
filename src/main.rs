@@ -1,32 +1,27 @@
-use juniper::{graphql_object, EmptyMutation, EmptySubscription, GraphQLObject, RootNode};
+use juniper::{graphql_object, EmptyMutation, EmptySubscription, GraphQLObject, RootNode, ID};
 use rocket::{get, launch, post, response::content::RawHtml, routes, Build, Rocket, State};
-use std::sync::atomic::{AtomicUsize, Ordering};
-
-struct HitCount {
-    count: AtomicUsize,
-}
-
-#[get("/count")]
-fn count(hit_count: &State<HitCount>) -> String {
-    let current_count = hit_count.count.load(Ordering::Relaxed);
-    format!("Number of visits: {}", current_count)
-}
 
 #[derive(GraphQLObject)]
-struct Person {
-    name: String,
-    age: i32,
+struct Book {
+    id: ID,
+    title: String,
 }
 
 struct Query;
 
 #[graphql_object]
 impl Query {
-    fn person() -> Person {
-        Person {
-            name: "John".to_string(),
-            age: 30,
-        }
+    fn books() -> Vec<Book> {
+        vec![
+            Book {
+                id: ID::new("book-1"),
+                title: String::from("Harry Potter and the Philosopher's Stone"),
+            },
+            Book {
+                id: ID::new("book-2"),
+                title: String::from("Harry Potter and the Chamber of Secrets"),
+            },
+        ]
     }
 }
 
@@ -56,13 +51,10 @@ fn playground() -> RawHtml<String> {
 #[launch]
 fn rocket() -> Rocket<Build> {
     rocket::build()
-        .manage(HitCount {
-            count: AtomicUsize::new(0),
-        })
         .manage(Schema::new(
             Query,
             EmptyMutation::new(),
             EmptySubscription::new(),
         ))
-        .mount("/", routes![count, get_graphql, playground, post_graphql])
+        .mount("/", routes![get_graphql, post_graphql, playground])
 }
