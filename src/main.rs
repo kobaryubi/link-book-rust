@@ -1,29 +1,6 @@
-use juniper::{graphql_object, EmptyMutation, EmptySubscription, GraphQLObject, RootNode, ID};
+use juniper::{EmptyMutation, EmptySubscription, RootNode};
+use link_book_rust::schema::Query;
 use rocket::{get, launch, post, response::content::RawHtml, routes, Build, Rocket, State};
-
-#[derive(GraphQLObject)]
-struct Book {
-    id: ID,
-    title: String,
-}
-
-struct Query;
-
-#[graphql_object]
-impl Query {
-    fn books() -> Vec<Book> {
-        vec![
-            Book {
-                id: ID::new("book-1"),
-                title: String::from("Harry Potter and the Philosopher's Stone"),
-            },
-            Book {
-                id: ID::new("book-2"),
-                title: String::from("Harry Potter and the Chamber of Secrets"),
-            },
-        ]
-    }
-}
 
 type Schema = RootNode<'static, Query, EmptyMutation, EmptySubscription>;
 
