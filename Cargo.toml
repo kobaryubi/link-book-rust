@@ -7,6 +7,7 @@ edition = "2021"
 dotenv = "0.15.0"
 juniper = { git = "https://github.com/graphql-rust/juniper.git", branch = "master" }
 juniper_rocket = { git = "https://github.com/graphql-rust/juniper.git", branch = "master" }
+mongodb = "2.8.1"
 rocket = "0.5.0"
 
 [workspace]
