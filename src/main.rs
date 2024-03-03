@@ -1,6 +1,7 @@
 use juniper::{EmptySubscription, RootNode};
 use link_book_rust::schema::{Mutation, Query};
 use rocket::{get, launch, post, response::content::RawHtml, routes, Build, Rocket, State};
+use std::env;
 
 type Schema = RootNode<'static, Query, Mutation, EmptySubscription>;
 
@@ -27,6 +28,9 @@ fn playground() -> RawHtml<String> {
 
 #[launch]
 fn rocket() -> Rocket<Build> {
+    let link_book_env = env::var("LINK_BOOK_ENV").unwrap_or(String::from("dev"));
+    dotenv::from_filename(format!(".env.{}", link_book_env)).expect("Failed to read .env file");
+
     rocket::build()
         .manage(Schema::new(Query, Mutation, EmptySubscription::new()))
         .mount("/", routes![get_graphql, post_graphql, playground])
