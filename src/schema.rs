@@ -1,4 +1,4 @@
-use juniper::{graphql_object, GraphQLInputObject, GraphQLObject, ID};
+use juniper::{graphql_object, FieldResult, GraphQLInputObject, GraphQLObject, ID};
 use mongodb::{
     options::{ClientOptions, ServerApi, ServerApiVersion},
     Client,
@@ -39,15 +39,15 @@ pub struct Mutation;
 
 #[graphql_object(context = Context)]
 impl Mutation {
-    async fn create_book(book_input: BookInput, context: &Context) -> Book {
+    async fn create_book(book_input: BookInput, context: &Context) -> FieldResult<Book> {
         let collection = context.database.collection::<BookInput>("books");
-        let result = collection.insert_one(&book_input, None).await.unwrap();
+        let result = collection.insert_one(&book_input, None).await?;
         println!("Inserted a document with _id: {}", result.inserted_id);
 
-        Book {
+        Ok(Book {
             id: ID::new("book-1"),
             title: book_input.title,
-        }
+        })
     }
 }
 
