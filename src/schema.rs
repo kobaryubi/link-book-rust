@@ -3,6 +3,7 @@ use mongodb::{
     options::{ClientOptions, ServerApi, ServerApiVersion},
     Client,
 };
+use serde::Serialize;
 use std::env;
 
 #[derive(GraphQLObject)]
@@ -11,7 +12,7 @@ struct Book {
     title: String,
 }
 
-#[derive(GraphQLInputObject)]
+#[derive(GraphQLInputObject, Serialize)]
 struct BookInput {
     title: String,
 }
@@ -38,7 +39,11 @@ pub struct Mutation;
 
 #[graphql_object(context = Context)]
 impl Mutation {
-    fn create_book(book_input: BookInput) -> Book {
+    async fn create_book(book_input: BookInput, context: &Context) -> Book {
+        let collection = context.database.collection::<BookInput>("books");
+        let result = collection.insert_one(&book_input, None).await.unwrap();
+        println!("Inserted a document with _id: {}", result.inserted_id);
+
         Book {
             id: ID::new("book-1"),
             title: book_input.title,
@@ -62,7 +67,7 @@ impl Context {
         let client = Client::with_options(client_options)?;
 
         Ok(Context {
-            database: client.database("admin"),
+            database: client.database("link_book"),
         })
     }
 }
