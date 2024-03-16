@@ -1,5 +1,6 @@
-use juniper::{graphql_object, FieldResult, GraphQLInputObject, GraphQLObject, ID};
+use juniper::{graphql_object, FieldError, FieldResult, GraphQLInputObject, GraphQLObject, ID};
 use mongodb::{
+    bson::Bson,
     options::{ClientOptions, ServerApi, ServerApiVersion},
     Client,
 };
@@ -15,6 +16,11 @@ struct Book {
 #[derive(GraphQLInputObject, Serialize)]
 struct BookInput {
     title: String,
+}
+
+#[derive(GraphQLObject)]
+struct BookPayload {
+    id: ID,
 }
 
 pub struct Query;
@@ -39,15 +45,20 @@ pub struct Mutation;
 
 #[graphql_object(context = Context)]
 impl Mutation {
-    async fn create_book(book_input: BookInput, context: &Context) -> FieldResult<Book> {
+    async fn create_book(book_input: BookInput, context: &Context) -> FieldResult<BookPayload> {
         let collection = context.database.collection::<BookInput>("books");
         let result = collection.insert_one(&book_input, None).await?;
-        println!("Inserted a document with _id: {}", result.inserted_id);
 
-        Ok(Book {
-            id: ID::new("book-1"),
-            title: book_input.title,
-        })
+        if let Bson::ObjectId(oid) = result.inserted_id {
+            Ok(BookPayload {
+                id: ID::new(oid.to_hex()),
+            })
+        } else {
+            Err(FieldError::new(
+                "Failed to insert book",
+                "INTERNAL_SERVER_ERROR".into(),
+            ))
+        }
     }
 }
 
