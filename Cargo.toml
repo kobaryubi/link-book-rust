@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 dotenv = "0.15.0"
+futures = "0.3.30"
 juniper = { git = "https://github.com/graphql-rust/juniper.git", branch = "master" }
 juniper_rocket = { git = "https://github.com/graphql-rust/juniper.git", branch = "master" }
 mongodb = "2.8.1"

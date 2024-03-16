@@ -1,16 +1,28 @@
+use futures::stream::TryStreamExt;
 use juniper::{graphql_object, FieldError, FieldResult, GraphQLInputObject, GraphQLObject, ID};
 use mongodb::{
-    bson::Bson,
+    bson::{oid::ObjectId, Bson},
     options::{ClientOptions, ServerApi, ServerApiVersion},
     Client,
 };
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::env;
 
-#[derive(GraphQLObject)]
+#[derive(Debug, Deserialize)]
 struct Book {
-    id: ID,
+    _id: ObjectId,
     title: String,
+}
+
+#[graphql_object]
+impl Book {
+    fn id(&self) -> ID {
+        ID::new(&self._id.to_hex())
+    }
+
+    fn title(&self) -> &str {
+        &self.title
+    }
 }
 
 #[derive(GraphQLInputObject, Serialize)]
@@ -27,17 +39,12 @@ pub struct Query;
 
 #[graphql_object(context = Context)]
 impl Query {
-    fn get_books() -> Vec<Book> {
-        vec![
-            Book {
-                id: ID::new("book-1"),
-                title: String::from("Harry Potter and the Philosopher's Stone"),
-            },
-            Book {
-                id: ID::new("book-2"),
-                title: String::from("Harry Potter and the Chamber of Secrets"),
-            },
-        ]
+    async fn get_books(context: &Context) -> FieldResult<Vec<Book>> {
+        let collection = context.database.collection::<Book>("books");
+        let cursor = collection.find(None, None).await?;
+        let books = cursor.try_collect().await?;
+
+        Ok(books)
     }
 }
 
