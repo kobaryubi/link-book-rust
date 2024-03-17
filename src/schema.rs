@@ -8,6 +8,22 @@ use mongodb::{
 use serde::{Deserialize, Serialize};
 use std::env;
 
+struct Link {
+    _id: ObjectId,
+    url: String,
+}
+
+#[graphql_object]
+impl Link {
+    fn id(&self) -> ID {
+        ID::new(&self._id.to_hex())
+    }
+
+    fn url(&self) -> &str {
+        &self.url
+    }
+}
+
 #[derive(Debug, Deserialize)]
 struct Book {
     _id: ObjectId,
@@ -22,6 +38,13 @@ impl Book {
 
     fn title(&self) -> &str {
         &self.title
+    }
+
+    fn links(&self) -> Vec<Link> {
+        vec![Link {
+            _id: ObjectId::new(),
+            url: String::from("https://www.rust-lang.org/"),
+        }]
     }
 }
 
