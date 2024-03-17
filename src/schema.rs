@@ -1,7 +1,7 @@
 use futures::stream::TryStreamExt;
 use juniper::{graphql_object, FieldError, FieldResult, GraphQLInputObject, GraphQLObject, ID};
 use mongodb::{
-    bson::{oid::ObjectId, Bson},
+    bson::{doc, oid::ObjectId, Bson},
     options::{ClientOptions, ServerApi, ServerApiVersion},
     Client,
 };
@@ -62,7 +62,20 @@ pub struct Query;
 
 #[graphql_object(context = Context)]
 impl Query {
-    async fn get_books(context: &Context) -> FieldResult<Vec<Book>> {
+    async fn book(id: ID, context: &Context) -> FieldResult<Book> {
+        let collection = context.database.collection::<Book>("books");
+        let result = collection
+            .find_one(doc! {"_id": ObjectId::parse_str(id.to_string())? }, None)
+            .await?;
+
+        if let Some(book) = result {
+            Ok(book)
+        } else {
+            Err(FieldError::new("Book not found", "NOT_FOUND".into()))
+        }
+    }
+
+    async fn books(context: &Context) -> FieldResult<Vec<Book>> {
         let collection = context.database.collection::<Book>("books");
         let cursor = collection.find(None, None).await?;
         let books = cursor.try_collect().await?;
