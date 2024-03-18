@@ -1,3 +1,4 @@
+use crate::models::{Book, Link, NewBook};
 use futures::stream::TryStreamExt;
 use juniper::{graphql_object, FieldError, FieldResult, GraphQLInputObject, GraphQLObject, ID};
 use mongodb::{
@@ -5,13 +6,8 @@ use mongodb::{
     options::{ClientOptions, ServerApi, ServerApiVersion},
     Client,
 };
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use std::env;
-
-struct Link {
-    _id: ObjectId,
-    url: String,
-}
 
 #[graphql_object]
 impl Link {
@@ -22,12 +18,6 @@ impl Link {
     fn url(&self) -> &str {
         &self.url
     }
-}
-
-#[derive(Debug, Deserialize)]
-struct Book {
-    _id: ObjectId,
-    title: String,
 }
 
 #[graphql_object]
@@ -51,6 +41,12 @@ impl Book {
 #[derive(GraphQLInputObject, Serialize)]
 struct BookInput {
     title: String,
+}
+
+impl BookInput {
+    fn into_new_book(self) -> NewBook {
+        NewBook { title: self.title }
+    }
 }
 
 #[derive(GraphQLObject)]
@@ -89,8 +85,10 @@ pub struct Mutation;
 #[graphql_object(context = Context)]
 impl Mutation {
     async fn create_book(book_input: BookInput, context: &Context) -> FieldResult<BookPayload> {
-        let collection = context.database.collection::<BookInput>("books");
-        let result = collection.insert_one(&book_input, None).await?;
+        let collection = context.database.collection::<NewBook>("books");
+        let result = collection
+            .insert_one(&book_input.into_new_book(), None)
+            .await?;
 
         if let Bson::ObjectId(oid) = result.inserted_id {
             Ok(BookPayload {
