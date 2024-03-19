@@ -1,4 +1,4 @@
-use crate::models::{Book, Link, NewBook};
+use crate::models::{Book, Link, NewBook, NewLink};
 use futures::stream::TryStreamExt;
 use juniper::{graphql_object, FieldError, FieldResult, GraphQLInputObject, GraphQLObject, ID};
 use mongodb::{
@@ -41,11 +41,15 @@ impl Book {
 #[derive(GraphQLInputObject, Serialize)]
 struct BookInput {
     title: String,
+    urls: Vec<String>,
 }
 
 impl BookInput {
-    fn into_new_book(self) -> NewBook {
-        NewBook { title: self.title }
+    fn into_new_book(self, link_ids: Vec<ObjectId>) -> NewBook {
+        NewBook {
+            title: self.title,
+            link_ids,
+        }
     }
 }
 
@@ -85,9 +89,28 @@ pub struct Mutation;
 #[graphql_object(context = Context)]
 impl Mutation {
     async fn create_book(book_input: BookInput, context: &Context) -> FieldResult<BookPayload> {
+        let links_collection = context.database.collection::<NewLink>("links");
+        let new_links = book_input
+            .urls
+            .iter()
+            .map(|url| NewLink {
+                url: url.to_string(),
+            })
+            .collect::<Vec<_>>();
+        let links_insert_many_result = links_collection.insert_many(new_links, None).await?;
+
         let collection = context.database.collection::<NewBook>("books");
         let result = collection
-            .insert_one(&book_input.into_new_book(), None)
+            .insert_one(
+                &book_input.into_new_book(
+                    links_insert_many_result
+                        .inserted_ids
+                        .into_iter()
+                        .map(|(_, id)| id.as_object_id().unwrap())
+                        .collect(),
+                ),
+                None,
+            )
             .await?;
 
         if let Bson::ObjectId(oid) = result.inserted_id {

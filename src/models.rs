@@ -10,9 +10,15 @@ pub struct Book {
 #[derive(Serialize)]
 pub struct NewBook {
     pub title: String,
+    pub link_ids: Vec<ObjectId>,
 }
 
 pub struct Link {
     pub _id: ObjectId,
+    pub url: String,
+}
+
+#[derive(Serialize)]
+pub struct NewLink {
     pub url: String,
 }
