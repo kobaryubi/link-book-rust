@@ -1,0 +1,13 @@
+FROM rust:1.76 AS builder
+WORKDIR /usr/src/app
+
+COPY . .
+RUN LINK_BOOK_ENV=dev cargo build --release
+
+FROM debian:bookworm-slim AS runner
+WORKDIR /usr/local/bin
+COPY --from=builder /usr/src/app/target/release/link-book-rust .
+COPY .env.dev .
+EXPOSE 8000
+
+CMD ["./link-book-rust"]
