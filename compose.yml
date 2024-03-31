@@ -1,6 +1,8 @@
 services:
   rust:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
     volumes:
       - .:/usr/src/app
     tty: true

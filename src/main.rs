@@ -1,6 +1,6 @@
 use juniper::{EmptySubscription, RootNode};
 use link_book_rust::schema::{Context, Mutation, Query};
-use rocket::{get, launch, post, response::content::RawHtml, routes, Build, Rocket, State};
+use rocket::{get, launch, post, response::content::RawHtml, routes, Build, Config, Rocket, State};
 use std::env;
 
 type Schema = RootNode<'static, Query, Mutation, EmptySubscription<Context>>;
@@ -37,4 +37,5 @@ async fn rocket() -> Rocket<Build> {
         .manage(Context::build().await.unwrap())
         .manage(Schema::new(Query, Mutation, EmptySubscription::new()))
         .mount("/", routes![get_graphql, post_graphql, playground])
+        .configure(Config::figment().merge(("address", "0.0.0.0")))
 }
